@@ -16,8 +16,8 @@ SOCKET_IRC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 def bot_setup(ircserver, channel, technux_bot, passwd):
     """ bot_setup() - Setup basic stuffs like nick and what channel to join"""
     SOCKET_IRC.connect((ircserver, 6667))
-    SOCKET_IRC.send("USER " + technux_bot + " " + technux_bot + \
-                   " " + technux_bot + " :Technux irc bot\n")
+    SOCKET_IRC.send("USER " + technux_bot + " " + technux_bot +
+                    " " + technux_bot + " :Technux irc bot\n")
     SOCKET_IRC.send("NICK %s\n" % (technux_bot))
 
     """ Authenticate with NICKSERV if nick is registred """
@@ -77,8 +77,8 @@ def _main():
 
     while True:
         ircmsg = SOCKET_IRC.recv(2048)
-        ircmsg = ircmsg.strip('\n\r') # Remove linebreaks
-        print(ircmsg) # Log irc msg to console or file
+        ircmsg = ircmsg.strip('\n\r')  # Remove linebreaks
+        print(ircmsg)  # Log irc msg to console or file
 
         if ircmsg.find(":Hello %s" % technux_bot) != -1:
             nick = parse_nick(ircmsg)
