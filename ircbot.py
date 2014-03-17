@@ -13,11 +13,11 @@ import ConfigParser
 SOCKET_IRC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
-def bot_setup(ircserver, channel, technux_bot, passwd):
+def bot_setup(ircserver, channel, technux_bot, realname, passwd):
     """ bot_setup() - Setup basic stuffs like nick and what channel to join"""
     SOCKET_IRC.connect((ircserver, 6667))
     SOCKET_IRC.send("USER " + technux_bot + " " + technux_bot +
-                    " " + technux_bot + " :Technux irc bot\n")
+                    " " + technux_bot + " :" + realname + "\n")
     SOCKET_IRC.send("NICK %s\n" % (technux_bot))
 
     """ Authenticate with NICKSERV if nick is registred """
@@ -59,6 +59,7 @@ def _main():
     if config.read(conf_file):
         channel = config.get('settings', 'channel')
         technux_bot = config.get('settings', 'botname')
+        realname = config.get('settings', 'realname')
         ircserver = config.get('settings', 'server')
         logfile = config.get('settings', 'logfile')
         passwd = config.get('settings', 'passwd')
@@ -69,7 +70,7 @@ def _main():
         print "ERROR: %s could not be found!" % (conf_file)
         sys.exit(66)
 
-    bot_setup(ircserver, channel, technux_bot, passwd)
+    bot_setup(ircserver, channel, technux_bot, realname, passwd)
 
     ''' If logfile is set, redirect console printouts to logfile'''
     if logfile:
