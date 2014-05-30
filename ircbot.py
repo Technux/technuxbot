@@ -1,6 +1,6 @@
 """
 Author: Technux
-webste: http://www.technux.se
+website: http://www.technux.se
 mail:   support@technux.se
 """
 #!/usr/bin/python
@@ -9,6 +9,13 @@ import os
 import socket
 import sys
 import ConfigParser
+
+try:
+    import redmine_interface
+    redmine_enabled = True
+except ImportError as ie:
+    print "Redmine support modules not loaded (reason: %s)" % ie
+    redmine_enabled = False
 
 SOCKET_IRC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -52,6 +59,7 @@ def parse_nick(msg):
 
 
 def _main():
+    global redmine_enabled
 
     conf_file = ("%s/conf/bot.conf" %
                 (os.path.dirname(os.path.abspath(__file__))))
@@ -66,9 +74,16 @@ def _main():
         greeting = config.get('text', 'greeting')
         usagemsg = config.get('text', 'usage')
         info = config.get('text', 'info')
+        redmine_url = config.get('redmine', 'url')
     else:
         print "ERROR: %s could not be found!" % (conf_file)
         sys.exit(66)
+
+    if redmine_enabled is True and redmine_url is not "":
+        redmine_interface.setup(redmine_url)
+    else:
+        print "Redmine url not specified. Support for redmine commands disabled"
+        redmine_enabled = False
 
     bot_setup(ircserver, channel, technux_bot, realname, passwd)
 
@@ -90,6 +105,16 @@ def _main():
         elif ircmsg.find("%s: info" % (technux_bot)) != -1:
             nick = parse_nick(ircmsg)
             send_msg(channel, nick, info)
+        elif ircmsg.find("%s: redmine" % (technux_bot)) != -1:
+            nick = parse_nick(ircmsg)
+            if redmine_enabled is False:
+                send_msg(channel, nick, "Redmine commands not enabled")
+            else:
+                index = ircmsg.find("%s: redmine" % (technux_bot))
+                cmd = ircmsg[index:].split()
+                res = redmine_interface.parse_command(cmd[2:])
+                for r in res:
+                    send_msg(channel, nick, r)
 
         keep_alive(ircmsg)
 
