@@ -53,8 +53,14 @@ def parse_command(cmd):
             return ["Issue with id '" + cmd[0] + "' does not exist!"]
 
     if cmd[0] == "bugs":
-        if cmd[1] is not "":
-            all_bugs = redmine_obj.issue.filter(tracker_id=1, project_id=cmd[1])
+        try:
+            bugs_arg = cmd[1]
+        except IndexError:
+            bugs_arg = ""
+        if bugs_arg is not "":
+            proj = redmine_obj.project.get(bugs_arg)
+            all_bugs = redmine_obj.issue.filter(
+                tracker_id=1, project_id=proj.id, subproject_id='!*')
         else:
             all_bugs = redmine_obj.issue.filter(tracker_id=1)
 
