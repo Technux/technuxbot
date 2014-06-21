@@ -1,9 +1,10 @@
+#!/usr/bin/python
+
 """
 Author: Technux
 website: http://www.technux.se
 mail:   support@technux.se
 """
-#!/usr/bin/python
 
 import os
 import socket
@@ -61,8 +62,7 @@ def parse_nick(msg):
 def _main():
     global redmine_enabled
 
-    conf_file = ("%s/conf/bot.conf" %
-                (os.path.dirname(os.path.abspath(__file__))))
+    conf_file = "%s/conf/bot.conf" % os.path.dirname(os.path.abspath(__file__))
     config = ConfigParser.ConfigParser()
     if config.read(conf_file):
         channel = config.get('settings', 'channel')
@@ -82,7 +82,8 @@ def _main():
     if redmine_enabled is True and redmine_url is not "":
         redmine_interface.setup(redmine_url)
     else:
-        print "Redmine url not specified. Support for redmine commands disabled"
+        print "Redmine url not specified. " \
+              "Support for redmine commands disabled"
         redmine_enabled = False
 
     bot_setup(ircserver, channel, technux_bot, realname, passwd)
@@ -114,7 +115,9 @@ def _main():
                 cmd = ircmsg[index:].split()
                 res = redmine_interface.parse_command(cmd[2:])
                 for r in res:
-                    send_msg(channel, nick, r)
+                    str = r.strip().split('\n')
+                    for line in str:
+                        send_msg(channel, nick, line)
 
         keep_alive(ircmsg)
 
