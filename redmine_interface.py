@@ -52,6 +52,11 @@ def parse_command(cmd):
         except exceptions.ResourceNotFoundError:
             return ["Issue with id '" + cmd[0] + "' does not exist!"]
 
+    supported_commands = ["bugs", "help", "listp"]
+    if cmd[0] not in supported_commands:
+        return ["'" + cmd[0] + "'" + " is not a supported command!",
+                redmine_usage()]
+
     if cmd[0] == "bugs":
         try:
             bugs_arg = cmd[1]
