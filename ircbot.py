@@ -6,6 +6,7 @@ website: http://www.technux.se
 mail:   support@technux.se
 """
 
+import argparse
 import os
 import socket
 import sys
@@ -62,7 +63,27 @@ def parse_nick(msg):
 def _main():
     global redmine_enabled
 
-    conf_file = "%s/conf/bot.conf" % os.path.dirname(os.path.abspath(__file__))
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-c', '--conf', help='specify path to custom config file')
+    args = parser.parse_args()
+
+    if args.conf:
+        if os.path.isfile(args.conf):
+            conf_file = args.conf
+        else:
+            print "Specified config file %s not found!" % args.conf
+            exit(64)
+
+        if not os.access(conf_file, os.R_OK):
+            print "Can't read %s!" % conf_file
+            exit(65)
+    else:
+        conf_file = "%s/conf/bot.conf" % os.path.dirname(
+            os.path.abspath(__file__))
+
+    print "Using config file %s" % conf_file
+
     config = ConfigParser.ConfigParser()
     if config.read(conf_file):
         channel = config.get('settings', 'channel')
