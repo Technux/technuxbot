@@ -1,4 +1,4 @@
-technuxbot
+TechnuxBot
 ==========
 
 TechnuxBot is a basic irc bot written in python.
@@ -14,6 +14,8 @@ Just run ./ircbot.py and then your done..
 
 Support
 ----------
+Run ircbot.py with '-h' to see usage/help text.
+
 If you have any questions or wish to see some new features,
 send an email to: support@technux.se
 
