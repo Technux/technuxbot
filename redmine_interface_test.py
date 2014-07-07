@@ -6,9 +6,10 @@ except ImportError as ie:
     print ie
     exit(1)
 
-redmineurl="http://www.redmine.org"
+redmineurl = "http://www.redmine.org"
 
 redmine_interface.setup(redmineurl)
+
 
 def perform_command_test(cmd):
     res = redmine_interface.parse_command(cmd)

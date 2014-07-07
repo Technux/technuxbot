@@ -18,7 +18,8 @@ def redmine_usage():
     return "redmine [command [args]]\n\n" \
            "Available commands:\n" \
            "<issue number>   --> Get info and link for single issue number\n" \
-           "bugs [<project>] --> Get info on all issues in the bug tracker [for <project>]\n" \
+           "bugs [<project>] --> Get info on all issues in the bug tracker "\
+           "[for <project>]\n" \
            "help             --> This help text\n" \
            "listp            --> List all available projects\n" \
            "\n"

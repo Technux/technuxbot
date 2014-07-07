@@ -17,6 +17,7 @@ try:
     redmine_enabled = True
 except ImportError as ie:
     print "Redmine support modules not loaded (reason: %s)" % ie
+    print "'pip install python-redmine' prerequisite to enable Redmine support"
     redmine_enabled = False
 
 SOCKET_IRC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
