@@ -21,9 +21,12 @@ except ImportError as ie:
     redmine_enabled = False
 
 SOCKET_IRC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+connected_to_irc = False
 
 
 def bot_setup(ircserver, channel, technux_bot, realname, passwd):
+    global connected_to_irc
+
     """ bot_setup() - Setup basic stuffs like nick and what channel to join"""
     SOCKET_IRC.connect((ircserver, 6667))
     SOCKET_IRC.send("USER " + technux_bot + " " + technux_bot +
@@ -35,6 +38,7 @@ def bot_setup(ircserver, channel, technux_bot, realname, passwd):
         SOCKET_IRC.send("PRIVMSG NICKSERV :IDENTIFY %s\n" % (passwd))
 
     SOCKET_IRC.send("JOIN %s\n" % (channel))
+    connected_to_irc = True
 
 
 def keep_alive(msg):
@@ -59,6 +63,16 @@ def usage(channel, nick, usagemsg):
 def parse_nick(msg):
     """ parse_nick() - Parse nickname from irc msg log"""
     return msg.split('!')[0][1:]
+
+
+def leave_irc_network():
+    """ leave_irc_network() - Gracefully disconnect from IRC server"""
+
+    global connected_to_irc
+
+    if connected_to_irc is True:
+        print "Sending quit"
+        SOCKET_IRC.send("QUIT")
 
 
 def _main():
@@ -108,40 +122,45 @@ def _main():
               "Support for redmine commands disabled"
         redmine_enabled = False
 
-    bot_setup(ircserver, channel, technux_bot, realname, passwd)
+    try:
+        bot_setup(ircserver, channel, technux_bot, realname, passwd)
 
-    ''' If logfile is set, redirect console printouts to logfile'''
-    if logfile:
-        sys.stdout = open(logfile, 'w')
+        ''' If logfile is set, redirect console printouts to logfile'''
+        if logfile:
+            sys.stdout = open(logfile, 'w')
 
-    while True:
-        ircmsg = SOCKET_IRC.recv(2048)
-        ircmsg = ircmsg.strip('\n\r')  # Remove linebreaks
-        print(ircmsg)  # Log irc msg to console or file
+        while True:
+            ircmsg = SOCKET_IRC.recv(2048)
+            ircmsg = ircmsg.strip('\n\r')  # Remove linebreaks
+            print(ircmsg)  # Log irc msg to console or file
 
-        if ircmsg.find(":Hello %s" % technux_bot) != -1:
-            nick = parse_nick(ircmsg)
-            send_msg(channel, nick, greeting)
-        elif ircmsg.find("%s: help" % (technux_bot)) != -1:
-            nick = parse_nick(ircmsg)
-            usage(channel, nick, usagemsg)
-        elif ircmsg.find("%s: info" % (technux_bot)) != -1:
-            nick = parse_nick(ircmsg)
-            send_msg(channel, nick, info)
-        elif ircmsg.find("%s: redmine" % (technux_bot)) != -1:
-            nick = parse_nick(ircmsg)
-            if redmine_enabled is False:
-                send_msg(channel, nick, "Redmine commands not enabled")
-            else:
-                index = ircmsg.find("%s: redmine" % (technux_bot))
-                cmd = ircmsg[index:].split()
-                res = redmine_interface.parse_command(cmd[2:])
-                for r in res:
-                    str = r.strip().split('\n')
-                    for line in str:
-                        send_msg(channel, nick, line)
+            if ircmsg.find(":Hello %s" % technux_bot) != -1:
+                nick = parse_nick(ircmsg)
+                send_msg(channel, nick, greeting)
+            elif ircmsg.find("%s: help" % (technux_bot)) != -1:
+                nick = parse_nick(ircmsg)
+                usage(channel, nick, usagemsg)
+            elif ircmsg.find("%s: info" % (technux_bot)) != -1:
+                nick = parse_nick(ircmsg)
+                send_msg(channel, nick, info)
+            elif ircmsg.find("%s: redmine" % (technux_bot)) != -1:
+                nick = parse_nick(ircmsg)
+                if redmine_enabled is False:
+                    send_msg(channel, nick, "Redmine commands not enabled")
+                else:
+                    index = ircmsg.find("%s: redmine" % (technux_bot))
+                    cmd = ircmsg[index:].split()
+                    res = redmine_interface.parse_command(cmd[2:])
+                    for r in res:
+                        str = r.strip().split('\n')
+                        for line in str:
+                            send_msg(channel, nick, line)
 
-        keep_alive(ircmsg)
+            keep_alive(ircmsg)
+    except KeyboardInterrupt:
+        print "\n\n'Ctrl + C' detected"
+        leave_irc_network()
+        print "Exiting"
 
 if __name__ == "__main__":
     _main()
