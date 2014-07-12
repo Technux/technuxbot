@@ -55,6 +55,11 @@ def send_msg(channel, nickname, msg):
         SOCKET_IRC.send("PRIVMSG %s :%s: %s\n" % (channel, nickname, msg))
 
 
+def send_priv_msg(nickname, msg):
+    """ send_priv_msg() - Send PRIVMSG message to nick """
+    SOCKET_IRC.send("PRIVMSG %s :%s\n" % (nickname, msg))
+
+
 def usage(channel, nick, usagemsg):
     """ usage() - Print usage for the bot"""
     send_msg(channel, nick, usagemsg)
@@ -154,7 +159,7 @@ def _main():
                     for r in res:
                         str = r.strip().split('\n')
                         for line in str:
-                            send_msg(channel, nick, line)
+                            send_priv_msg(nick, line)
 
             keep_alive(ircmsg)
     except KeyboardInterrupt:
