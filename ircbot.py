@@ -116,12 +116,13 @@ def _main():
         usagemsg = config.get('text', 'usage')
         info = config.get('text', 'info')
         redmine_url = config.get('redmine', 'url')
+        redmine_trackers = config.get('redmine', 'trackers')
     else:
         print "ERROR: %s could not be found!" % (conf_file)
         sys.exit(66)
 
     if redmine_enabled is True and redmine_url is not "":
-        redmine_interface.setup(redmine_url)
+        redmine_interface.setup(redmine_url, redmine_trackers.split(','))
     else:
         print "Redmine url not specified. " \
               "Support for redmine commands disabled"

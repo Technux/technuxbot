@@ -7,8 +7,8 @@ except ImportError as ie:
     exit(1)
 
 redmineurl = "http://www.redmine.org"
-
-redmine_interface.setup(redmineurl)
+testtrackers = ["Defect|bugs","Feature|features","Patch|patches"]
+redmine_interface.setup(redmineurl, testtrackers)
 
 
 def perform_command_test(cmd):
@@ -21,9 +21,14 @@ perform_command_test("17113")
 perform_command_test(["17113"])
 perform_command_test(["help"])
 
-#res = redmine_interface.parse_command(["bugs"])
-#for r in res:
-#    print r
+print "FETCH BUGS"
+res = redmine_interface.parse_command(["bugs"])
+for r in res:
+    print r
+print "FETCH FEATURES"
+res = redmine_interface.parse_command(["features"])
+for r in res:
+    print r
 
 res = redmine_interface.parse_command(["listp"])
 for r in res:

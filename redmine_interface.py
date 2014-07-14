@@ -2,11 +2,35 @@ from redmine import Redmine
 from redmine import exceptions
 
 redmine_obj = None
+tracker_dict = {}
 
 
-def setup(url):
+def setup(url, trackers):
+    """
+    setup()
+
+    Setup singleton redmine object
+
+    url -- redmine server url
+    trackers -- [tracker_1|command_1, tracker_2|command_2, ...]
+    """
     global redmine_obj
+    global tracker_dict
+
     redmine_obj = Redmine(url)
+
+    tracker_namecmd_dict = {}
+    for t in trackers:
+        tmp = t.split('|')
+        tracker_namecmd_dict[tmp[0]] = tmp[1]
+
+    all_trackers = redmine_obj.tracker.all()
+
+    # maps tracker commands to tracker id numbers
+    for t in all_trackers:
+        for tn in tracker_namecmd_dict.keys():
+            if t.name == str(tn):
+                tracker_dict[tracker_namecmd_dict[tn]] = t.id
 
 
 def url_from_issue(issue):
@@ -36,6 +60,7 @@ def parse_command(cmd):
     """
 
     global redmine_obj
+    global tracker_dict
 
     if not cmd:
         return [redmine_usage()]
@@ -53,28 +78,31 @@ def parse_command(cmd):
         except exceptions.ResourceNotFoundError:
             return ["Issue with id '" + cmd[0] + "' does not exist!"]
 
-    supported_commands = ["bugs", "help", "listp"]
+    supported_commands = ["help", "listp"]
+    supported_commands += tracker_dict.keys()
     if cmd[0] not in supported_commands:
         return ["'" + cmd[0] + "'" + " is not a supported command!",
                 redmine_usage()]
 
-    if cmd[0] == "bugs":
+    if cmd[0] in tracker_dict.keys():
         try:
-            bugs_arg = cmd[1]
+            cmd_arg = cmd[1]
         except IndexError:
-            bugs_arg = ""
-        if bugs_arg is not "":
-            proj = redmine_obj.project.get(bugs_arg)
-            all_bugs = redmine_obj.issue.filter(
-                tracker_id=1, project_id=proj.id, subproject_id='!*')
+            cmd_arg = ""
+        if cmd_arg is not "":
+            proj = redmine_obj.project.get(cmd_arg)
+            all_tickets = redmine_obj.issue.filter(
+                tracker_id=tracker_dict[cmd[0]], project_id=proj.id,
+                subproject_id='!*')
         else:
-            all_bugs = redmine_obj.issue.filter(tracker_id=1)
+            all_tickets = redmine_obj.issue.filter(
+                tracker_id=tracker_dict[cmd[0]])
 
-        bug_list = []
-        for b in all_bugs:
-            bug_list.append("#" + str(b.id) + ": " + b.subject)
+        ticket_list = []
+        for t in all_tickets:
+            ticket_list.append("#" + str(t.id) + ": " + t.subject)
 
-        return bug_list
+        return ticket_list
 
     if cmd[0] == "help":
         return [redmine_usage()]
