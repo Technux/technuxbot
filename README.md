@@ -7,6 +7,7 @@ More functionality might be added (depending on the needs) in the future.
 Configuration
 ----------
 Use ./conf/bot.conf to configure it after your needs.
+Or use ./ircbot.py -c CONF
 
 Installation
 ----------
@@ -25,5 +26,7 @@ Contributions
 ----------
 Either send a 'git format-patch' to support@technux.se or become a member of
 technux (see http://www.technux.se/Support/).
+
+Bug-tracking and ongoing features can be tracked at http://redmine.technux.se/
 
 Make sure that your patch is signed and follows pep8 style guide.
