@@ -10,10 +10,13 @@ import argparse
 import os
 import socket
 import sys
+import threading
+import time
 import ConfigParser
 
 try:
     import redmine_interface
+    REDMINE_MAX_RESULTS = 15
     redmine_enabled = True
 except ImportError as ie:
     print "Redmine support modules not loaded (reason: %s)" % ie
@@ -24,31 +27,38 @@ SOCKET_IRC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 connected_to_irc = False
 
 
-def bot_setup(ircserver, channel, technux_bot, realname, passwd):
+def bot_setup(config_dict):
     global connected_to_irc
 
+    technux_bot_name = config_dict['technux_bot']
+
     """ bot_setup() - Setup basic stuffs like nick and what channel to join"""
-    SOCKET_IRC.connect((ircserver, 6667))
-    SOCKET_IRC.send("USER " + technux_bot + " " + technux_bot +
-                    " " + technux_bot + " :" + realname + "\n")
-    SOCKET_IRC.send("NICK %s\n" % (technux_bot))
+    SOCKET_IRC.connect((config_dict['ircserver'], 6667))
+    SOCKET_IRC.send("USER " + technux_bot_name + " " + technux_bot_name +
+                    " " + technux_bot_name + " :" +
+                    config_dict['realname'] + "\n")
+    SOCKET_IRC.send("NICK %s\n" % (technux_bot_name))
 
     """ Authenticate with NICKSERV if nick is registred """
-    if passwd:
-        SOCKET_IRC.send("PRIVMSG NICKSERV :IDENTIFY %s\n" % (passwd))
+    if config_dict['passwd']:
+        SOCKET_IRC.send("PRIVMSG NICKSERV :IDENTIFY %s\n" %
+                       (config_dict['passwd']))
 
-    SOCKET_IRC.send("JOIN %s\n" % (channel))
+    SOCKET_IRC.send("JOIN %s\n" % config_dict['channel'])
     connected_to_irc = True
 
 
 def keep_alive(msg):
-    """ keep_alive() - If the ircserver ping us, make sure to respond"""
+    """ keep_alive() - If the ircserver pings us, make sure to respond"""
     if msg.find("PING :") != -1:
         SOCKET_IRC.send("PONG :alive\n")
+        return False
+    else:
+        return True
 
 
 def send_msg(channel, nickname, msg):
-    """ send_msg() - Send a PRIVMSG message to channel or channel and nick"""
+    """ send_msg() - Send a PRIVMSG message to channel or channel + nick"""
     if nickname == "":
         SOCKET_IRC.send("PRIVMSG %s : %s\n" % (channel, msg))
     else:
@@ -80,6 +90,38 @@ def leave_irc_network():
         SOCKET_IRC.send("QUIT")
 
 
+def handle_msg(ircmsg, config_dict):
+    """ handle_msg() - parse and handle an irc msg"""
+
+    if ircmsg.find("Hello %s" % config_dict['technux_bot']) != -1:
+        nick = parse_nick(ircmsg)
+        send_msg(config_dict['channel'], nick, config_dict['greeting'])
+    elif ircmsg.find("%s: help" % (config_dict['technux_bot'])) != -1:
+        nick = parse_nick(ircmsg)
+        usage(config_dict['channel'], nick, config_dict['usagemsg'])
+    elif ircmsg.find("%s: info" % (config_dict['technux_bot'])) != -1:
+        nick = parse_nick(ircmsg)
+        send_msg(config_dict['channel'], nick, config_dict['info'])
+    elif ircmsg.find("%s: redmine" % (config_dict['technux_bot'])) != -1:
+        nick = parse_nick(ircmsg)
+        if redmine_enabled is False:
+            send_msg(config_dict['channel'], nick,
+                     "Redmine commands not enabled")
+        else:
+            index = ircmsg.find("%s: redmine" % (config_dict['technux_bot']))
+            cmd = ircmsg[index:].split()
+            res = redmine_interface.parse_command(cmd[2:])
+            if len(res) > REDMINE_MAX_RESULTS:
+                tmpmsg = "More than %d results, only sending first %d" % \
+                    (REDMINE_MAX_RESULTS, REDMINE_MAX_RESULTS)
+                send_priv_msg(nick, tmpmsg)
+                res = res[:REDMINE_MAX_RESULTS]
+            for r in res:
+                for line in r.strip().split('\n'):
+                    send_priv_msg(nick, line)
+                    time.sleep(0.5)  # avoid flooding the IRC server
+
+
 def _main():
     global redmine_enabled
 
@@ -105,16 +147,17 @@ def _main():
     print "Using config file %s" % conf_file
 
     config = ConfigParser.ConfigParser()
+    config_dict = {}
     if config.read(conf_file):
-        channel = config.get('settings', 'channel')
-        technux_bot = config.get('settings', 'botname')
-        realname = config.get('settings', 'realname')
-        ircserver = config.get('settings', 'server')
+        config_dict['channel'] = config.get('settings', 'channel')
+        config_dict['technux_bot'] = config.get('settings', 'botname')
+        config_dict['realname'] = config.get('settings', 'realname')
+        config_dict['ircserver'] = config.get('settings', 'server')
         logfile = config.get('settings', 'logfile')
-        passwd = config.get('settings', 'passwd')
-        greeting = config.get('text', 'greeting')
-        usagemsg = config.get('text', 'usage')
-        info = config.get('text', 'info')
+        config_dict['passwd'] = config.get('settings', 'passwd')
+        config_dict['greeting'] = config.get('text', 'greeting')
+        config_dict['usagemsg'] = config.get('text', 'usage')
+        config_dict['info'] = config.get('text', 'info')
         redmine_url = config.get('redmine', 'url')
         redmine_trackers = config.get('redmine', 'trackers')
     else:
@@ -129,40 +172,34 @@ def _main():
         redmine_enabled = False
 
     try:
-        bot_setup(ircserver, channel, technux_bot, realname, passwd)
+        bot_setup(config_dict)
 
         ''' If logfile is set, redirect console printouts to logfile'''
         if logfile:
             sys.stdout = open(logfile, 'w')
+
+        # variables frequently accessed below
+        channel = config_dict['channel']
+        technux_bot = config_dict['technux_bot']
 
         while True:
             ircmsg = SOCKET_IRC.recv(2048)
             ircmsg = ircmsg.strip('\n\r')  # Remove linebreaks
             print(ircmsg)  # Log irc msg to console or file
 
-            if ircmsg.find(":Hello %s" % technux_bot) != -1:
-                nick = parse_nick(ircmsg)
-                send_msg(channel, nick, greeting)
-            elif ircmsg.find("%s: help" % (technux_bot)) != -1:
-                nick = parse_nick(ircmsg)
-                usage(channel, nick, usagemsg)
-            elif ircmsg.find("%s: info" % (technux_bot)) != -1:
-                nick = parse_nick(ircmsg)
-                send_msg(channel, nick, info)
-            elif ircmsg.find("%s: redmine" % (technux_bot)) != -1:
-                nick = parse_nick(ircmsg)
-                if redmine_enabled is False:
-                    send_msg(channel, nick, "Redmine commands not enabled")
-                else:
-                    index = ircmsg.find("%s: redmine" % (technux_bot))
-                    cmd = ircmsg[index:].split()
-                    res = redmine_interface.parse_command(cmd[2:])
-                    for r in res:
-                        str = r.strip().split('\n')
-                        for line in str:
-                            send_priv_msg(nick, line)
+            # messages from the IRC server
+            if keep_alive(ircmsg) is False:
+                continue
 
-            keep_alive(ircmsg)
+            # don't start a thread unless the msg is directed
+            # to the bot by a nick
+            if (ircmsg.find("PRIVMSG %s :%s: " % (channel, technux_bot)) != -1) \
+            or (ircmsg.find("PRIVMSG %s :Hello %s" %
+                            (channel, technux_bot)) != -1):
+                t = threading.Thread(target=handle_msg,
+                                     args=(ircmsg, config_dict))
+                t.start()
+
     except KeyboardInterrupt:
         print "\n\n'Ctrl + C' detected"
         leave_irc_network()
