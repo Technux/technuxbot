@@ -202,8 +202,11 @@ def _main():
 
     except KeyboardInterrupt:
         print "\n\n'Ctrl + C' detected"
-        leave_irc_network()
-        print "Exiting"
+    except socket.gairerror as (err, msg):
+        print msg
+
+    leave_irc_network()
+    print "Exiting"
 
 if __name__ == "__main__":
     _main()
