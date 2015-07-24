@@ -24,9 +24,9 @@ Or feel free to contribute!
 
 Contributions
 ----------
-Either send a 'git format-patch' to support@technux.se or become a member of
-technux (see http://www.technux.se/Support/).
+The preferred way is to use 'gerrit' (dev.technux.se/gerrit) for contributions.
+You can also send a 'git format-patch' to support@technux.se.
 
-Bug-tracking and ongoing features can be tracked at http://redmine.technux.se/
+Bug-tracking and ongoing features can be tracked at http://dev.technux.se/redmine
 
 Make sure that your patch is signed and follows pep8 style guide.
