@@ -1,0 +1,10 @@
+[Unit]
+Description=Technux irc bot
+After=network.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python2.7 /opt/technuxbot/ircbot.py -c /etc/technuxbot.conf
+
+[Install]
+WantedBy=multi-user.target
