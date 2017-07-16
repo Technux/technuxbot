@@ -1,0 +1,71 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          technuxbot
+# Required-Start:
+# Required-Stop:
+# Default-Start:     3 5
+# Default-Stop:      0 6
+# Short-Description: Starts TechnuxBot
+### END INIT INFO
+
+DAEMON=/opt/technuxbot/ircbot.py
+DAEMON_NAME=technuxbot
+PIDFILE=/var/run/$DAEMON_NAME.pid
+CONF_FILE=/etc/technuxbot.conf
+TBOTOPTS="-c $CONF_FILE"
+DESC="TechnuxBot"
+
+FUNCTIONS=/lib/lsb/init-functions
+
+if [ ! -f $FUNCTIONS ]; then
+    # Test if non-lsb functions lib exists
+    FUNCTIONS=/etc/init.d/functions
+fi
+
+test -f $FUNCTIONS || exit 0
+test -f $DAEMON || exit 0
+test -f $CONF_FILE || exit 0
+
+. $FUNCTIONS
+
+do_start()
+{
+    start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --exec $DAEMON -- $TBOTOPTS
+}
+
+do_stop()
+{
+    start-stop-daemon --stop --pidfile $PIDFILE
+}
+
+ACTION="$1"
+case "$ACTION" in
+	start)
+                echo -n "Starting $DESC: "
+                do_start
+                echo "."
+		;;
+	stop)
+		echo -n "Stopping $DESC: "
+                do_stop
+                echo "."
+		;;
+	restart|force-reload)
+		echo -n "Restarting $DESC: "
+                do_stop
+		sleep 1
+                do_start
+                echo "."
+		;;
+	status)
+		status_of_proc  "$DAEMON_NAME" "$DAEMON" && exit 0 || exit $?
+		;;
+	*)
+		N=${0##*/}
+		N=${N#[SK]??}
+		echo "Usage: $N {start|stop|status|restart|force-reload}" >&2
+		exit 1
+		;;
+esac
+
+exit 0
