@@ -1,5 +1,5 @@
-from redmine import Redmine
-from redmine import exceptions
+from redminelib import Redmine
+from redminelib import exceptions
 
 redmine_obj = None
 tracker_dict = {}
