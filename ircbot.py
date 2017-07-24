@@ -28,21 +28,21 @@ connected_to_irc = False
 
 
 def bot_setup(config_dict):
+    """ bot_setup() - Setup basic stuffs like nick and what channel to join"""
     global connected_to_irc
 
     technux_bot_name = config_dict['technux_bot']
 
-    """ bot_setup() - Setup basic stuffs like nick and what channel to join"""
     SOCKET_IRC.connect((config_dict['ircserver'], 6667))
     SOCKET_IRC.send("USER " + technux_bot_name + " " + technux_bot_name +
                     " " + technux_bot_name + " :" +
                     config_dict['realname'] + "\n")
     SOCKET_IRC.send("NICK %s\n" % (technux_bot_name))
 
-    """ Authenticate with NICKSERV if nick is registred """
+    # Authenticate with NICKSERV if nick is registred
     if config_dict['passwd']:
         SOCKET_IRC.send("PRIVMSG NICKSERV :IDENTIFY %s\n" %
-                       (config_dict['passwd']))
+                        (config_dict['passwd']))
 
     SOCKET_IRC.send("JOIN %s\n" % config_dict['channel'])
     connected_to_irc = True
@@ -53,8 +53,8 @@ def keep_alive(msg):
     if msg.find("PING :") != -1:
         SOCKET_IRC.send("PONG :alive\n")
         return False
-    else:
-        return True
+
+    return True
 
 
 def send_msg(channel, nickname, msg):
@@ -174,7 +174,7 @@ def _main():
     try:
         bot_setup(config_dict)
 
-        ''' If logfile is set, redirect console printouts to logfile'''
+        # If logfile is set, redirect console printouts to logfile
         if logfile:
             sys.stdout = open(logfile, 'w')
 
@@ -193,16 +193,18 @@ def _main():
 
             # don't start a thread unless the msg is directed
             # to the bot by a nick
-            if (ircmsg.find("PRIVMSG %s :%s: " % (channel, technux_bot)) != -1) \
-            or (ircmsg.find("PRIVMSG %s :Hello %s" %
-                            (channel, technux_bot)) != -1):
+            if (ircmsg.find("PRIVMSG %s :%s: " %
+                            (channel, technux_bot)) != -1) \
+                or (ircmsg.find("PRIVMSG %s :Hello %s" %
+                                (channel, technux_bot)) != -1):
                 t = threading.Thread(target=handle_msg,
                                      args=(ircmsg, config_dict))
                 t.start()
 
     except KeyboardInterrupt:
         print "\n\n'Ctrl + C' detected"
-    except socket.gairerror as (err, msg):
+    except socket.gaierror as (err, msg):
+        print err
         print msg
 
     leave_irc_network()

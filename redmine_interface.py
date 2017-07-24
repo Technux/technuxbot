@@ -1,3 +1,9 @@
+"""
+Author: Technux
+website: http://www.technux.se
+mail:   support@technux.se
+"""
+
 from redminelib import Redmine
 from redminelib import exceptions
 
@@ -34,11 +40,21 @@ def setup(url, trackers):
 
 
 def url_from_issue(issue):
+    """
+    url_from_issue()
+
+    Get the link to a specified redmine issue
+    """
     global redmine_obj
     return redmine_obj.url + "/issues/" + str(issue.id)
 
 
 def redmine_usage():
+    """
+    redmine_usage()
+
+    Print the usage text for the redmine interface
+    """
     return "redmine [command [args]]\n\n" \
            "Available commands:\n" \
            "<issue number>   --> Get info and link for single issue number\n" \
